@@ -5,9 +5,12 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
 import mk.ukim.finki.informationsecurityapi.api.dto.UserLoginDTO;
 import mk.ukim.finki.informationsecurityapi.api.dto.UserRegisterDTO;
+import mk.ukim.finki.informationsecurityapi.domain.User;
 import mk.ukim.finki.informationsecurityapi.service.AuthService;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping(AuthController.BASE_URL)
@@ -29,6 +32,12 @@ public class AuthController {
     @ResponseStatus(HttpStatus.OK)
     public void login(@RequestBody UserLoginDTO userLoginDTO, HttpServletResponse response) {
         authService.login(userLoginDTO, response);
+    }
+
+    @GetMapping("/users")
+    @ResponseStatus(HttpStatus.OK)
+    public List<User> retrieveAllUsers(HttpServletRequest request){
+        return authService.getAllUsers(request);
     }
 
 }

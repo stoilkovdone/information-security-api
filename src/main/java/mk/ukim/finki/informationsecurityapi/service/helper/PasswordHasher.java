@@ -4,20 +4,14 @@ import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.Base64;
 
-public class PasswordHasher {
+public abstract class PasswordHasher {
+
     private static final SecureRandom random = new SecureRandom();
 
     public static String hashPassword(String password) {
         String salt = generateSalt();
         String hashedPassword = hash(password, salt);
         return salt + ":" + hashedPassword;
-    }
-
-    public static boolean verifyPassword(String password, String storedHash) {
-        String salt = storedHash.split(":")[0];
-        String storedHashedPassword = storedHash.split(":")[1];
-        String hashedPassword = hash(password, salt);
-        return hashedPassword.equals(storedHashedPassword);
     }
 
     private static String generateSalt() {
@@ -35,4 +29,12 @@ public class PasswordHasher {
             throw new RuntimeException("Error hashing password", e);
         }
     }
+
+    public static boolean verifyPassword(String password, String storedHash) {
+        String salt = storedHash.split(":")[0];
+        String storedHashedPassword = storedHash.split(":")[1];
+        String hashedPassword = hash(password, salt);
+        return hashedPassword.equals(storedHashedPassword);
+    }
+
 }

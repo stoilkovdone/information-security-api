@@ -1,8 +1,9 @@
 package mk.ukim.finki.informationsecurityapi.service.impl;
 
-import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
+import mk.ukim.finki.informationsecurityapi.api.dto.SessionDTO;
 import mk.ukim.finki.informationsecurityapi.api.dto.UserLoginDTO;
 import mk.ukim.finki.informationsecurityapi.api.dto.UserRegisterDTO;
 import mk.ukim.finki.informationsecurityapi.domain.User;
@@ -10,11 +11,15 @@ import mk.ukim.finki.informationsecurityapi.exception.BadCredentialsException;
 import mk.ukim.finki.informationsecurityapi.exception.ResourceNotFoundException;
 import mk.ukim.finki.informationsecurityapi.repository.UserRepository;
 import mk.ukim.finki.informationsecurityapi.service.AuthService;
+import mk.ukim.finki.informationsecurityapi.service.SessionService;
+import mk.ukim.finki.informationsecurityapi.service.helper.AuthenticationHelper;
 import mk.ukim.finki.informationsecurityapi.service.helper.PasswordHasher;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.regex.Pattern;
 
 @Service
@@ -22,6 +27,15 @@ import java.util.regex.Pattern;
 public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
+
+    private final SessionService sessionService;
+
+    @Override
+    public List<User> getAllUsers(HttpServletRequest request) {
+        AuthenticationHelper.authenticateRequest(request);
+
+        return userRepository.findAll();
+    }
 
     @Override
     public void register(UserRegisterDTO userRegisterDTO) {
@@ -48,14 +62,18 @@ public class AuthServiceImpl implements AuthService {
             throw new BadCredentialsException("Incorrect password");
         }
 
-        String sessionToken = UUID.randomUUID().toString();
+        SessionDTO session = sessionService.createSessionForUser(user);
 
-        Cookie cookie = new Cookie("SESSION_ID", sessionToken);
-        cookie.setHttpOnly(true);
-        cookie.setSecure(false);
-        cookie.setPath("/");
-        cookie.setMaxAge(3600);
-        response.addCookie(cookie);
+        ResponseCookie cookie = ResponseCookie
+                .from("session_id", session.token())
+                .httpOnly(true)
+                .secure(false)
+                .sameSite("Lax")
+                .path("/")
+                .maxAge(session.validForHours())
+                .build();
+
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
     }
 
     private void validateUserRegistration(UserRegisterDTO userRegisterDTO) {

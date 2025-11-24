@@ -3,6 +3,7 @@ package mk.ukim.finki.informationsecurityapi.exception.handler;
 import mk.ukim.finki.informationsecurityapi.api.dto.ErrorDTO;
 import mk.ukim.finki.informationsecurityapi.exception.BadCredentialsException;
 import mk.ukim.finki.informationsecurityapi.exception.ResourceNotFoundException;
+import mk.ukim.finki.informationsecurityapi.exception.UnauthorizedException;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -34,6 +35,15 @@ public class GlobalExceptionHandler {
         return new ErrorDTO(
                 ex.getMessage(),
                 HttpStatus.BAD_REQUEST.value()
+        );
+    }
+
+    @ExceptionHandler(UnauthorizedException.class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    public ErrorDTO handleUnauthorizedException(UnauthorizedException ex) {
+        return new ErrorDTO(
+                ex.getMessage(),
+                HttpStatus.UNAUTHORIZED.value()
         );
     }
 

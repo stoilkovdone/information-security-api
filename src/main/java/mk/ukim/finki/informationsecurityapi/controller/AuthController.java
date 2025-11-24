@@ -34,6 +34,12 @@ public class AuthController {
         authService.login(userLoginDTO, response);
     }
 
+    @PostMapping("/verify-email")
+    @ResponseStatus(HttpStatus.OK)
+    public void verifyEmail(@RequestParam String verificationToken) {
+        authService.verifyEmail(verificationToken);
+    }
+
     @GetMapping("/users")
     @ResponseStatus(HttpStatus.OK)
     public List<User> retrieveAllUsers(HttpServletRequest request){

@@ -16,4 +16,6 @@ public interface AuthService {
 
     void login(UserLoginDTO userLoginDTO, HttpServletResponse response);
 
+    void verifyEmail(String verificationToken);
+
 }

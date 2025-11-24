@@ -11,6 +11,8 @@ import mk.ukim.finki.informationsecurityapi.exception.BadCredentialsException;
 import mk.ukim.finki.informationsecurityapi.exception.ResourceNotFoundException;
 import mk.ukim.finki.informationsecurityapi.repository.UserRepository;
 import mk.ukim.finki.informationsecurityapi.service.AuthService;
+import mk.ukim.finki.informationsecurityapi.service.EmailService;
+import mk.ukim.finki.informationsecurityapi.service.EmailVerificationService;
 import mk.ukim.finki.informationsecurityapi.service.SessionService;
 import mk.ukim.finki.informationsecurityapi.service.helper.AuthenticationHelper;
 import mk.ukim.finki.informationsecurityapi.service.helper.PasswordHasher;
@@ -29,6 +31,8 @@ public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
 
     private final SessionService sessionService;
+    private final EmailVerificationService emailVerificationService;
+    private final EmailService emailService;
 
     @Override
     public List<User> getAllUsers(HttpServletRequest request) {
@@ -46,8 +50,12 @@ public class AuthServiceImpl implements AuthService {
         user.setUsername(userRegisterDTO.username());
         user.setEmail(userRegisterDTO.email());
         user.setPassword(PasswordHasher.hashPassword(userRegisterDTO.password()));
+        user.setEmailVerified(false);
 
         userRepository.save(user);
+
+        String token = emailVerificationService.createVerificationToken(user);
+        emailService.sendVerificationEmail(user.getEmail(), user.getUsername(), token);
     }
 
     @Override
@@ -58,6 +66,10 @@ public class AuthServiceImpl implements AuthService {
         }
 
         User user = optionalUser.get();
+        if (!user.isEmailVerified()) {
+            throw new IllegalArgumentException("Please verify your email before logging in");
+        }
+
         if (!PasswordHasher.verifyPassword(userLoginDTO.password(), user.getPassword())) {
             throw new BadCredentialsException("Incorrect password");
         }
@@ -74,6 +86,11 @@ public class AuthServiceImpl implements AuthService {
                 .build();
 
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+    }
+
+    @Override
+    public void verifyEmail(String verificationToken) {
+        emailVerificationService.verifyEmail(verificationToken);
     }
 
     private void validateUserRegistration(UserRegisterDTO userRegisterDTO) {

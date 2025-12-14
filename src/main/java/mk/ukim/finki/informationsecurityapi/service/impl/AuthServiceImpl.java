@@ -6,14 +6,12 @@ import lombok.AllArgsConstructor;
 import mk.ukim.finki.informationsecurityapi.api.dto.SessionDTO;
 import mk.ukim.finki.informationsecurityapi.api.dto.UserLoginDTO;
 import mk.ukim.finki.informationsecurityapi.api.dto.UserRegisterDTO;
+import mk.ukim.finki.informationsecurityapi.api.dto.VerifyOtpDTO;
 import mk.ukim.finki.informationsecurityapi.domain.User;
 import mk.ukim.finki.informationsecurityapi.exception.BadCredentialsException;
 import mk.ukim.finki.informationsecurityapi.exception.ResourceNotFoundException;
 import mk.ukim.finki.informationsecurityapi.repository.UserRepository;
-import mk.ukim.finki.informationsecurityapi.service.AuthService;
-import mk.ukim.finki.informationsecurityapi.service.EmailService;
-import mk.ukim.finki.informationsecurityapi.service.EmailVerificationService;
-import mk.ukim.finki.informationsecurityapi.service.SessionService;
+import mk.ukim.finki.informationsecurityapi.service.*;
 import mk.ukim.finki.informationsecurityapi.service.helper.AuthenticationHelper;
 import mk.ukim.finki.informationsecurityapi.service.helper.PasswordHasher;
 import org.springframework.http.HttpHeaders;
@@ -32,6 +30,7 @@ public class AuthServiceImpl implements AuthService {
 
     private final SessionService sessionService;
     private final EmailVerificationService emailVerificationService;
+    private final OTPVerificationService otpVerificationService;
     private final EmailService emailService;
 
     @Override
@@ -60,12 +59,8 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public void login(UserLoginDTO userLoginDTO, HttpServletResponse response) {
-        Optional<User> optionalUser = userRepository.findByEmail(userLoginDTO.email());
-        if (optionalUser.isEmpty()) {
-            throw new ResourceNotFoundException(String.format("User with email: %s not found", userLoginDTO.email()));
-        }
+        User user = findUserByEmailOrThrow(userLoginDTO.email());
 
-        User user = optionalUser.get();
         if (!user.isEmailVerified()) {
             throw new IllegalArgumentException("Please verify your email before logging in");
         }
@@ -73,6 +68,16 @@ public class AuthServiceImpl implements AuthService {
         if (!PasswordHasher.verifyPassword(userLoginDTO.password(), user.getPassword())) {
             throw new BadCredentialsException("Incorrect password");
         }
+
+        String otp = otpVerificationService.createOTP(user);
+        emailService.sendOTP(user.getEmail(), user.getUsername(), otp);
+    }
+
+    @Override
+    public void verifyOTP(VerifyOtpDTO verifyOtpDTO, HttpServletResponse response) {
+        User user = findUserByEmailOrThrow(verifyOtpDTO.email());
+        otpVerificationService.verifyOTP(user, verifyOtpDTO.otp());
+
 
         SessionDTO session = sessionService.createSessionForUser(user);
 
@@ -119,5 +124,14 @@ public class AuthServiceImpl implements AuthService {
         if (!pattern.matcher(userRegisterDTO.password()).matches()) {
             throw new IllegalArgumentException("Password not strong enough");
         }
+    }
+
+    private User findUserByEmailOrThrow(String email) {
+        Optional<User> optionalUser = userRepository.findByEmail(email);
+        if (optionalUser.isEmpty()) {
+            throw new ResourceNotFoundException(String.format("User with email: %s not found", email));
+        }
+
+        return optionalUser.get();
     }
 }

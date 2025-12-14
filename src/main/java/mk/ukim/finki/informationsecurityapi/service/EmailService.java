@@ -4,4 +4,6 @@ public interface EmailService {
 
     void sendVerificationEmail(String toEmail, String username, String token);
 
+    void sendOTP(String toEmail, String username, String otp);
+
 }

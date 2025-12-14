@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
 import mk.ukim.finki.informationsecurityapi.api.dto.UserLoginDTO;
 import mk.ukim.finki.informationsecurityapi.api.dto.UserRegisterDTO;
+import mk.ukim.finki.informationsecurityapi.api.dto.VerifyOtpDTO;
 import mk.ukim.finki.informationsecurityapi.domain.User;
 import mk.ukim.finki.informationsecurityapi.service.AuthService;
 import org.springframework.http.HttpStatus;
@@ -32,6 +33,12 @@ public class AuthController {
     @ResponseStatus(HttpStatus.OK)
     public void login(@RequestBody UserLoginDTO userLoginDTO, HttpServletResponse response) {
         authService.login(userLoginDTO, response);
+    }
+
+    @PostMapping("/verify-otp")
+    @ResponseStatus(HttpStatus.OK)
+    public void verifyOTP(@RequestBody VerifyOtpDTO verifyOtpDTO, HttpServletResponse response) {
+        authService.verifyOTP(verifyOtpDTO, response);
     }
 
     @PostMapping("/logout")

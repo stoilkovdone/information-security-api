@@ -34,6 +34,12 @@ public class AuthController {
         authService.login(userLoginDTO, response);
     }
 
+    @PostMapping("/logout")
+    @ResponseStatus(HttpStatus.OK)
+    public void logout(HttpServletRequest request) {
+        authService.logout(request);
+    }
+
     @PostMapping("/verify-email")
     @ResponseStatus(HttpStatus.OK)
     public void verifyEmail(@RequestParam String verificationToken) {

@@ -22,12 +22,16 @@ public abstract class AuthenticationHelper {
         activeSessions.put(token, session);
     }
 
+    public static void removeSession(String token) {
+        activeSessions.remove(token);
+    }
+
     public static void authenticateRequest(HttpServletRequest request) {
         String sessionId = getSessionId(request.getCookies());
         validateSession(sessionId);
     }
 
-    private static String getSessionId(Cookie[] cookies) {
+    public static String getSessionId(Cookie[] cookies) {
         if (cookies == null) {
             return null;
         }

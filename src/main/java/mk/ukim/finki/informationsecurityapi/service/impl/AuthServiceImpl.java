@@ -89,6 +89,15 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    public void logout(HttpServletRequest request) {
+        String sessionId = AuthenticationHelper.getSessionId(request.getCookies());
+
+        if (sessionId != null) {
+            AuthenticationHelper.removeSession(sessionId);
+        }
+    }
+
+    @Override
     public void verifyEmail(String verificationToken) {
         emailVerificationService.verifyEmail(verificationToken);
     }

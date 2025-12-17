@@ -2,22 +2,20 @@ package mk.ukim.finki.informationsecurityapi.service.impl;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
-import mk.ukim.finki.informationsecurityapi.api.dto.SessionDTO;
-import mk.ukim.finki.informationsecurityapi.api.dto.UserLoginDTO;
-import mk.ukim.finki.informationsecurityapi.api.dto.UserRegisterDTO;
-import mk.ukim.finki.informationsecurityapi.api.dto.VerifyOtpDTO;
+import mk.ukim.finki.informationsecurityapi.api.dto.*;
 import mk.ukim.finki.informationsecurityapi.domain.User;
 import mk.ukim.finki.informationsecurityapi.exception.BadCredentialsException;
 import mk.ukim.finki.informationsecurityapi.exception.ResourceNotFoundException;
 import mk.ukim.finki.informationsecurityapi.repository.UserRepository;
 import mk.ukim.finki.informationsecurityapi.service.*;
-import mk.ukim.finki.informationsecurityapi.service.helper.AuthenticationHelper;
 import mk.ukim.finki.informationsecurityapi.service.helper.PasswordHasher;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;
@@ -28,14 +26,14 @@ public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
 
-    private final SessionService sessionService;
+    private final JWTService jwtService;
     private final EmailVerificationService emailVerificationService;
     private final OTPVerificationService otpVerificationService;
     private final EmailService emailService;
 
     @Override
-    public List<User> getAllUsers(HttpServletRequest request) {
-        AuthenticationHelper.authenticateRequest(request);
+    public List<User> getAllUsers(HttpServletResponse response, HttpServletRequest request) {
+        jwtService.validateRequest(request);
 
         return userRepository.findAll();
     }
@@ -74,32 +72,37 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    @Transactional
     public void verifyOTP(VerifyOtpDTO verifyOtpDTO, HttpServletResponse response) {
         User user = findUserByEmailOrThrow(verifyOtpDTO.email());
         otpVerificationService.verifyOTP(user, verifyOtpDTO.otp());
 
-
-        SessionDTO session = sessionService.createSessionForUser(user);
+        String token = jwtService.generateToken(user);
 
         ResponseCookie cookie = ResponseCookie
-                .from("session_id", session.token())
+                .from("token", token)
                 .httpOnly(true)
                 .secure(false)
                 .sameSite("Lax")
                 .path("/")
-                .maxAge(session.validForHours())
+                .maxAge(Duration.ofHours(24))
                 .build();
 
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
     }
 
     @Override
-    public void logout(HttpServletRequest request) {
-        String sessionId = AuthenticationHelper.getSessionId(request.getCookies());
+    public void logout(HttpServletResponse response) {
+        ResponseCookie deleteCookie = ResponseCookie
+                .from("token", null)
+                .httpOnly(true)
+                .secure(false)
+                .sameSite("Lax")
+                .path("/")
+                .maxAge(0)
+                .build();
 
-        if (sessionId != null) {
-            AuthenticationHelper.removeSession(sessionId);
-        }
+        response.addHeader(HttpHeaders.SET_COOKIE, deleteCookie.toString());
     }
 
     @Override

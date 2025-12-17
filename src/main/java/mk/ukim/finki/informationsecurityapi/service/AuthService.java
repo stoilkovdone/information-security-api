@@ -11,7 +11,7 @@ import java.util.List;
 
 public interface AuthService {
 
-    List<User> getAllUsers(HttpServletRequest request);
+    List<User> getAllUsers(HttpServletResponse response, HttpServletRequest request);
 
     void register(UserRegisterDTO userRegisterDTO);
 
@@ -19,7 +19,7 @@ public interface AuthService {
 
     void verifyOTP(VerifyOtpDTO verifyOtpDTO, HttpServletResponse response);
 
-    void logout(HttpServletRequest request);
+    void logout(HttpServletResponse response);
 
     void verifyEmail(String verificationToken);
 

@@ -43,8 +43,8 @@ public class AuthController {
 
     @PostMapping("/logout")
     @ResponseStatus(HttpStatus.OK)
-    public void logout(HttpServletRequest request) {
-        authService.logout(request);
+    public void logout(HttpServletResponse response) {
+        authService.logout(response);
     }
 
     @PostMapping("/verify-email")
@@ -55,8 +55,8 @@ public class AuthController {
 
     @GetMapping("/users")
     @ResponseStatus(HttpStatus.OK)
-    public List<User> retrieveAllUsers(HttpServletRequest request){
-        return authService.getAllUsers(request);
+    public List<User> retrieveAllUsers(HttpServletResponse response, HttpServletRequest request){
+        return authService.getAllUsers(response, request);
     }
 
 }
